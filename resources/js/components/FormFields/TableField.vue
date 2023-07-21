@@ -3,16 +3,18 @@
     <template slot="field">
       <Table :can-delete="field.canDelete" :edit-mode="!field.readonly">
         <div class="bg-white overflow-hidden key-value-items">
-          <TableRow
-            v-for="(row, index) in theData"
-            :key="row.id"
-            :ref="row.id"
-            :can-delete="field.canDelete"
-            :index="index"
-            :read-only="field.readonly"
-            :row.sync="row"
-            @remove-row="removeRow"
-          />
+          <draggable v-model="theData" @end="onDragEnd">
+            <TableRow
+              v-for="(row, index) in theData"
+              :key="row.id"
+              :ref="row.id"
+              :can-delete="field.canDelete"
+              :index="index"
+              :read-only="field.readonly"
+              :row.sync="row"
+              @remove-row="removeRow"
+            />
+          </draggable>
         </div>
       </Table>
       <div v-if="field.canDelete" class="relative mr-12 mt-3 flex">
@@ -58,6 +60,7 @@ import { FormField, HandlesValidationErrors } from 'laravel-nova';
 import TableRow from './TableRow';
 import autosize from 'autosize';
 import Table from './Table';
+import draggable from 'vuedraggable';
 
 function guid() {
   var S4 = function () {
@@ -69,7 +72,7 @@ function guid() {
 export default {
   mixins: [HandlesValidationErrors, FormField],
 
-  components: { Table, TableRow },
+  components: { Table, TableRow, draggable },
 
   data: () => ({ theData: [] }),
 
@@ -201,6 +204,24 @@ export default {
         // prettier-ignore
         Object.values(this.$refs).map(ref => autosize(ref[0].$refs.columnFields))[0].slice(-1)[0].select();
       });
+    },
+
+    /**
+     * Rearrange theData after drag-and-drop.
+     */
+     onDragEnd(event) {
+      let oldIndex = event.newIndex;
+      if(event.oldIndex < event.newIndex) {
+        oldIndex = event.newIndex - 1;
+      }
+
+      const movedItem = this.theData.splice(oldIndex, 1)[0];
+      
+      let index = event.newIndex;
+      if(event.oldIndex < event.newIndex) {
+        index = event.newIndex - 1;
+      }
+      this.theData.splice(index, 0, movedItem);
     },
   },
 
